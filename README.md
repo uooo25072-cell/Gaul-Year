@@ -1,11 +1,155 @@
-<div align="center">
+# 🏪 GameZone - Telegram Game Store Bot (aiogram 3.x)
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+بوت متجر ألعاب احترافي باسم **GameZone** لبوتات تليجرام باستخدام **Python 3.12+** و **aiogram 3.x** و **SQLite (aiosqlite)** و **APScheduler**.
 
-  <h1>Built with AI Studio</h2>
+---
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 🚀 المميزات الأساسية
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+- 🎮 **شحن الألعاب والبطاقات الرقمية**:
+  - **PUBG Mobile**: شحن عن طريق Player ID (تحقق من الأرقام).
+  - **Free Fire**: شحن عن طريق Player ID (تحقق من الأرقام).
+  - **Google Play US**: شحن بطاقات أمريكية عن طريق الإيميل (تحقق Regex).
+  - **Xbox US**: شحن بطاقات أمريكية عن طريق الإيميل (تحقق Regex وتنبيه الحساب الأمريكي).
 
-</div>
+- 💳 **طرق دفع متعددة**:
+  - **Vodafone Cash**: دفع يدوي وإرسال إثبات تحويل (صورة الإيصال).
+  - **Binance ID**: دفع يدوي وإرسال إثبات تحويل.
+  - **TONKeeper**: تحقق تلقائي اونلاين عبر شبكة TON وتحديث تلقائي لأسعار TON مقابل الجنيه المصري كل ساعة مع تخصيص Memo فريد لكل طلب.
+
+- ⏱️ **نظام مهلة الدفع تلقائيًا (20 دقيقة)**:
+  - عداد فحص تلقائي كل 10 ثوانٍ عبر `APScheduler`.
+  - إلغاء الطلبات غير مدفوعة الإثبات تلقائيًا وإشعار المستخدم والأدمن.
+
+- 🚫 **منع الطلبات المتعددة**:
+  - منع إنشاء طلب جديد في حال وجود طلب نشط قيد الدفع أو المراجعة أو التنفيذ.
+
+- 🛠️ **لوحة تحكم أدمن كاملة (`/admin`)**:
+  - إحصائيات شاملة للمبيعات، إجمالي الطلبات، المستخدمين والمبيعات اليومية.
+  - إدارة وإقرار الطلبات (قبول، رفض مع ذكر السبب، تحويل لـ "جاري التنفيذ"، وإتمام "تم الشحن").
+  - إدارة الباقات والأسعار وإضافتها وتعديلها وإيقافها مباشرة في قاعدة البيانات.
+  - إدارة طرق بيانات الدفع (Vodafone Cash, Binance ID, TON Wallet).
+  - إدارة المستخدمين وحظر/فك حظر أي حساب.
+  - نظام إرسال إذاعة عامة (نص، صور، فيديو) مع إحصائية الإرسال الناجح والفاشل.
+  - تفعيل/تعطيل وضع الصيانة للمتجر.
+  - نظام نسخ احتياطي واستعادة كامل لقاعدة بيانات SQLite بنقرة زر.
+  - سجل عمليات للأدمن (Admin Audit Logs).
+
+---
+
+## 📂 هيكل ملفات المشروع (Project Architecture)
+
+```text
+GameZone/
+│
+├── main.py                     # نقطة تشغيل البوت الرئيسية (Asyncio Polling & Dispatcher)
+├── config.py                   # قراءة إعدادات البيئة وتسجيل اللوجات
+├── database.py                 # إدارة اتصال وحداول قاعدة بيانات SQLite (aiosqlite)
+├── requirements.txt            # المكتبات المطلوبة للبناء والتشغيل
+├── .env.example                # نموذج الإعدادات والمتغيرات البيئية
+├── README.md                   # دليل الاستخدام والتشغيل
+│
+├── handlers/                   # معالجات الأوامر والأحداث (Aiogram Routers)
+│   ├── user.py                 # أمر /start وقائمة طلباتي والعودة للرئيسية
+│   ├── orders.py               # حالات FSM لاختيار المنتجات والباقات وتأكيد البيانات
+│   ├── payments.py             # اختيار وسيلة الدفع، رفع الإيصال، والتحقق التلقائي
+│   └── admin.py                # لوحة الأدمن والإحصائيات والإذاعة وإدارة الطلبات
+│
+├── keyboards/                  # لوحات الأزرار الشفافة (Inline Keyboards)
+│   ├── user.py                 # أزرار المستخدم والمنتجات والباقات
+│   └── admin.py                # أزرار لوحة تحكم الأدمن والخيارات
+│
+├── services/                   # الخدمات الأساسية ووظائف الخلفية
+│   ├── ton_service.py          # فحص شبكة TON وجلب سعر TON/EGP تلقائيًا
+│   ├── payment_service.py      # معالجة وتأكيد وإشعارات عمليات الدفع
+│   ├── scheduler_service.py    # المهام المجدولة (مهلة 20 دقيقة وتحديث السعر)
+│   ├── backup_service.py       # إنشاء واستعادة النسخ الاحتياطية
+│   └── broadcast_service.py    # بث الرسائل والإذاعة العامة
+│
+├── repositories/               # طبقة الاستعلام وقواعد البيانات (Data Repositories)
+│   ├── users.py                # استعلامات المستخدمين والحظر
+│   ├── orders.py               # استعلامات وتحديثات الطلبات والإحصائيات
+│   ├── products.py             # استعلامات المنتجات والباقات والتعديل عليها
+│   ├── settings.py             # استعلامات إعدادات المتجر وبيانات الدفع
+│   └── admin_logs.py           # سجل إجراءات وتصرفات الأدمن
+│
+├── utils/                      # الأدوات والوظائف المساعدة
+│   ├── validators.py           # التحقق من Player ID والإيميل عبر Regex
+│   ├── order_id.py             # التوليد الفريد لأرقام الطلبات والـ Memo
+│   └── formatters.py           # تنسيق الأسعار وحالات الطلبات بالعربية
+│
+├── middlewares/                # الوسائط البرمجية (Aiogram Middlewares)
+│   ├── maintenance.py          # فحص وضع الصيانة
+│   └── ban.py                  # فحص الحظر
+│
+├── filters/                    # الفلاتر الخاصة (Aiogram Filters)
+│   └── admin.py                # التحقق من صلاحيات الأدمن (IsAdminFilter)
+│
+└── data/                       # مجلد حفظ قاعدة البيانات
+    └── gamezone.db             # ملف قاعدة بيانات SQLite
+```
+
+---
+
+## 🛠️ كيفية الإعداد والتشغيل
+
+### 1️⃣ إنشاء البيئة الافتراضية وتثبيت المكتبات
+
+```bash
+# إنشاء بيئة افتراضية Python 3.12+
+python3 -m venv venv
+
+# تفعيل البيئة
+source venv/bin/activate        # On Linux/macOS
+# or
+venv\Scripts\activate           # On Windows
+
+# تثبيت جميع المكتبات المطلوبة
+pip install -r requirements.txt
+```
+
+---
+
+### 2️⃣ إنشاء وملء ملف `.env`
+
+قم بإنشاء ملف باسم `.env` في المجلد الرئيسي (أو انسخ من `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+ثم افتح ملف `.env` وقم بوضع التوكن الخاص بك من `@BotFather` ورقم الـ Telegram ID الخاص بك:
+
+```env
+BOT_TOKEN=7891234567:AAFxExampleTokenHere12345
+ADMIN_ID=123456789
+TON_API_KEY=
+TON_WALLET_ADDRESS=UQAerMfM0XruMQmynNMjIuKP7zu4AeMrVlUBRJgtxARyLq_H
+TON_PRICE_UPDATE_INTERVAL=3600
+PAYMENT_TIMEOUT_MINUTES=20
+PAYMENT_CHECK_INTERVAL=10
+DATABASE_PATH=data/gamezone.db
+LOG_LEVEL=INFO
+```
+
+---
+
+### 3️⃣ تشغيل البوت
+
+```bash
+python main.py
+```
+
+سيتكفل البوت بإنشاء قاعدة البيانات `data/gamezone.db` تلقائيًا وتعبئتها بالمنتجات والباقات وطرق الدفع الافتراضية عند التشغيل الأول.
+
+---
+
+## 👑 لوحة تحكم الأدمن
+
+للدخول للوحة الأدمن، أرسل الأمر التالي داخل البوت من الحساب المحدد في `ADMIN_ID`:
+
+```text
+/admin
+```
+
+ستظهر لك اللوحة الرئيسية لإدارة جميع جوانب البوت.

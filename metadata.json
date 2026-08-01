@@ -1,0 +1,6 @@
+{
+  "name": "GameZone Telegram Store Bot",
+  "description": "GameZone Telegram Game Store Bot built with Python 3.12, aiogram 3.x, SQLite, and a visual Web Control Panel & Interactive Telegram Simulator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
